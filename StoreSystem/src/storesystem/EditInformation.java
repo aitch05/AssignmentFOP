@@ -38,8 +38,8 @@ public class EditInformation {
                     return;
                 }
             }
-            System.out.println("Model name not found");
         }
+        System.out.println("Model name not found");
     }
     
     public static void EditSales(List<SaleRecord> sales, Scanner sc) {
@@ -84,19 +84,19 @@ public class EditInformation {
             case 3 -> {
                 System.out.println("Enter New Quantity: ");
                 foundRecord.quantity = sc.nextInt();
-                foundRecord.quantity = sc.nextInt();
             }
             case 4 -> {
                 System.out.println("Enter New Total: ");
-                foundRecord.total = sc.nextInt();
                 foundRecord.total = sc.nextInt();
             }
             case 5 -> {
                 System.out.println("Enter New Transaction Method: ");
                 foundRecord.method = sc.nextLine();
-                foundRecord.method = sc.nextLine();
             }
-            default -> System.out.println("Invalid choice");
+            default -> {
+                System.out.println("Invalid choice");
+                return;
+            }
         }
         
         System.out.println("Confirm Update? (Y/N): ");
