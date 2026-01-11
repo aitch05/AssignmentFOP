@@ -294,6 +294,8 @@ public class StoreSystem {
 
     private static void stockIn() {
         System.out.println("\n=== Stock In ===");
+        System.out.println("Date: " + LocalDate.now());
+        System.out.println("Time: " + formatTime(LocalTime.now()));
         System.out.print("From (HQ / Other Outlet): ");
         String from = sc.nextLine();
         String currentOutlet = currentUser.getOutlet();
@@ -334,6 +336,8 @@ public class StoreSystem {
 
     private static void stockOut() {
         System.out.println("\n=== Stock Out ===");
+        System.out.println("Date: " + LocalDate.now());
+        System.out.println("Time: " + formatTime(LocalTime.now()));
         System.out.print("To (Outlet / Customer): ");
         String to = sc.nextLine();
         String currentOutlet = currentUser.getOutlet();
@@ -506,6 +510,8 @@ public class StoreSystem {
 
 private static void performNewSale() {
     System.out.println("=== Record New Sale ===");
+    System.out.println("Date: " + LocalDate.now());
+    System.out.println("Time: " + formatTime(LocalTime.now()));
     String date = LocalDate.now().toString();
     String time = formatTime(LocalTime.now());
     System.out.print("Customer Name: ");
