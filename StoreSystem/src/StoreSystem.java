@@ -1,12 +1,15 @@
 import java.io.*;
 import java.time.*;
+import static java.time.LocalDate.now;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.time.LocalTime;
 import storesystem.Attendance;
 import storesystem.Employee;
 import storesystem.SaleRecord;
 import storesystem.Stock;
 import storesystem.EditInformation;
+import storesystem.SearchInformation;
 
 // ================= MAIN SYSTEM =================
 public class StoreSystem {
@@ -84,13 +87,16 @@ public class StoreSystem {
 
         if (currentUser.getRole().equalsIgnoreCase("Manager")) {
             System.out.println("3. Register Employee");
+            System.out.println("4. View Employee Performance Metrics");
+            System.out.println("5. Close Store(Send Daily Report)");
         }
-
-        System.out.println("4. Stock Management");
-        System.out.println("5. Sales & Search Information");
-        System.out.println("6. Edit Stock Information");
-        System.out.println("7. Edit Sales Information");
-        System.out.println("8. Logout");
+        System.out.println("6. Stock Management");
+        System.out.println("7. Sales & Search Information");
+        System.out.println("8. Edit Stock Information");
+        System.out.println("9. Edit Sales Information");
+        System.out.println("10. View Data Analytics");
+        System.out.println("11. Filter and Sort Sales History");
+        System.out.println("12. Logout");
         System.out.print("Select: ");
 
         switch (sc.nextLine()) {
@@ -100,11 +106,29 @@ public class StoreSystem {
                 if (currentUser.getRole().equalsIgnoreCase("Manager")) registerEmployee();
                 else System.out.println("Unauthorized.");
                 break;
-            case "4": stockMenu(); break;
-            case "5": runSalesModule(); break;
-            case "6": EditInformation.editStock(stocks, sc); saveStock(); break;
-            case "7": EditInformation.EditSales(salesHistory, sc); break;
-            case "8": logout(); break;
+            case "4":
+                if (currentUser.getRole().equalsIgnoreCase("Manager")) {
+                    SearchInformation.employeePerformance((ArrayList<SaleRecord>) salesHistory);
+                } else {
+                    System.out.println("Unauthorized.");
+                }
+                break;
+            case "5":
+                if (currentUser.getRole().equalsIgnoreCase("Manager")) {
+                    sendDailyReport();
+                    System.out.println("Store records finalized. Logging out...");
+                    logout();
+                } else {
+                    System.out.println("Unauthorized.");
+                }
+                break;
+            case "6": stockMenu(); break;
+            case "7": runSalesModule(); break;
+            case "8": EditInformation.editStock(stocks, sc); saveStock(); break;
+            case "9": EditInformation.EditSales(salesHistory, sc); break;
+            case "10": SearchInformation.showAnalytics((ArrayList<SaleRecord>) salesHistory); break;
+            case "11": SearchInformation.filterAndSortSales((ArrayList<SaleRecord>) salesHistory, sc); break;
+            case "12": logout(); break;
             default: System.out.println("Invalid option.");
         }
     }
@@ -305,14 +329,26 @@ public class StoreSystem {
         if (currentUser == null) return;
 
         try (Scanner fs = new Scanner(new File(STOCK_FILE))) {
-            String[] headers = fs.nextLine().split(",");
+            String headerLine = fs.nextLine();
+            String[] headers = headerLine.split(",");
             String outletCode = currentUser.getOutlet().split(" ")[0];
 
             int col = Arrays.asList(headers).indexOf(outletCode);
 
             while (fs.hasNextLine()) {
-                String[] p = fs.nextLine().split(",");
-                stocks.add(new Stock(p[0], Integer.parseInt(p[col]), outletCode));
+                String line = fs.nextLine();
+                if(line.isEmpty()) continue;
+                String[] p = line.split(",");
+                
+                String modelName = p[0];
+                double price = Double.parseDouble(p[1]);
+                int currentOutletQty = Integer.parseInt(p[col]);
+                
+                Stock s = new Stock(modelName, currentOutletQty, outletCode, price);
+                for(int i = 2; i < p.length; i++){
+                    s.addOutletStock(headers[i], Integer.parseInt(p[i]));
+                }
+                stocks.add(s);
             }
         } catch (Exception e) {
             System.out.println("Error loading stock.");
@@ -362,6 +398,9 @@ public class StoreSystem {
 }
 
 private static void performNewSale() {
+    System.out.println("=== Record New Sale ===");
+    String date = LocalDate.now().toString();
+    String time = formatTime(LocalTime.now());
     System.out.print("Customer Name: ");
     String customer = sc.nextLine();
     System.out.print("Model Name: ");
@@ -409,57 +448,69 @@ private static void performNewSale() {
 
 // --- FEATURE: SEARCH STOCK ---
 private static void performStockSearch() {
-    System.out.print("Search Model Name: ");
-    String keyword = sc.nextLine();
-    boolean found = false;
-
-    // Use the 'stocks' list that was loaded during login
-    for (Stock s : stocks) {
-        if (s.getModel().equalsIgnoreCase(keyword)) {
-            System.out.println("\n--- Product Found ---");
-            System.out.println("Model: " + s.getModel());
-            System.out.println("Price: RM" + s.getPrice());
-            System.out.println("Available Stock (" + s.getOutlet() + "): " + s.getQuantity());
-            found = true;
-            break;
-        }
-    }
-    if (!found) System.out.println("Product not found in current outlet.");
+    System.out.println("\n=== Search Stock Information ===");
+    System.out.println("Search Model Name: ");
+    String modelName = sc.nextLine();
+    System.out.print("Searching...\n");
+    
+    SearchInformation.searchStock(modelName, (ArrayList<Stock>) stocks);
 }
 
 // --- FEATURE: SEARCH SALES ---
 private static void performSalesSearch() {
-    boolean found = false;
-    System.out.print("Search keyword (Date/Customer/Model): ");
-    String key = sc.nextLine().toLowerCase();
+    System.out.println("\n=== Search Sales Information ===");
+    System.out.println("Search keyword (date/ customer name/ model name): ");
+    String keyword = sc.nextLine();
+    System.out.print("Searching...\n");
 
-    for (SaleRecord s : salesHistory) {
-        if (s.customerName.toLowerCase().contains(key) || s.getmodelName.toLowerCase().contains(key) || 
-            s.getdate.contains(key)) {
-            
-            System.out.println("Found Record: [" + s.date + "] " + s.customerName + 
-                               " purchased " + s.modelName + " (RM" + s.total + ")");
-            found = true;
-        }
-    }
-    if (!found) System.out.println("No records match '" + key + "'.");
+    SearchInformation.searchSales(keyword, (ArrayList<SaleRecord>) salesHistory);
 }
 
 // --- HELPER: GENERATE SALES RECEIPT FILE ---
 private static void generateSalesReceipt(SaleRecord s) {
-    String fileName = "sales_receipt_" + LocalDate.now() + ".txt";
+    String fileName = "sales_receipt_" + s.getDate() + ".txt";
     try (PrintWriter out = new PrintWriter(new FileWriter(fileName, true))) {
         out.println("=== OFFICIAL RECEIPT ===");
-        out.println("Date: " + s.date + " | Time: " + s.time);
-        out.println("Customer: " + s.customerName);
-        out.println("Item: " + s.modelName + " x" + s.quantity);
-        out.println("Total: RM" + s.total);
-        out.println("Payment: " + s.method);
-        out.println("Staff: " + s.employee);
+        out.println("Date: " + s.getDate() + "\tTime: " + s.getTime());
+        out.println("Customer: " + s.getCustomerName());
+        out.println("Item: " + s.getModelName() + "\tQuantity: " + s.getQuantity());
+        out.println("Total: RM" + s.getTotal());
+        out.println("Payment Method: " + s.getMethod());
+        out.println("Employee: " + s.getEmployee());
         out.println("---------------------------");
     } catch (IOException e) {
         System.out.println("Error saving receipt file.");
     }
   }
+
+private static String formatTime(LocalTime time) {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+    return time.format(formatter);
+  }
+
+private static void sendDailyReport() {
+    LocalDate today = LocalDate.now();
+    LocalTime now = LocalTime.now();
+    LocalTime end = LocalTime.of(22, 0);
+    
+    if(now.isAfter(end)) {
+        System.out.println("Warning: It is past 10.00 pm. Report should have been sent");
+    }
+    
+    double dailyTotal = 0;
+    for(SaleRecord s : salesHistory) {
+        if(s.getDate().equals(today.toString())){
+            dailyTotal += s.getTotal();
+        }
+    }
+    String fileName = "sales_receipt_" + today + ".txt";
+    System.out.println("\n=== Automated Email System ===");
+    System.out.println("Recipient: 24001391@siswa.um.edu.my");
+    System.out.println("Subject: Daily Sales Report - " + today);
+    System.out.println("Body: Hello HQ, the total sales for " + today + " is RM" + String.format("%2.f", dailyTotal));
+    System.out.println("Attach: [" + fileName + "]");
+    System.out.println("Status: Email sent successfully at" + now.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+    System.out.println("-------------------------------------\n");
+}
 
 }
