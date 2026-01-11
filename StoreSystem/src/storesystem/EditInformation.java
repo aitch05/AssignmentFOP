@@ -88,6 +88,7 @@ public class EditInformation {
             case 4 -> {
                 System.out.println("Enter New Total: ");
                 foundRecord.total = sc.nextInt();
+                sc.nextLine();
             }
             case 5 -> {
                 System.out.println("Enter New Transaction Method: ");
