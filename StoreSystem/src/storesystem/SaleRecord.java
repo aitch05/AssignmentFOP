@@ -8,6 +8,8 @@ package storesystem;
  *
  * @author Nur Hasna Nadirah
  */
+import java.time.LocalDate;
+import java.time.LocalTime;
 public class SaleRecord {
     
     String date, time, customerName, modelName, method, employee;
@@ -23,5 +25,21 @@ public class SaleRecord {
         this.total = total;
         this.method = method;
         this.employee = employee;
+    }
+    
+    public String getDate() {return date;}
+    public String getTime() {return time;}
+    public String getCustomerName() {return customerName;}
+    public String getModelName() {return modelName;}
+    public int getQuantity() {return quantity;}
+    public double getTotal() {return total;}
+    public String getMethod() {return method;}
+    public String getEmployee() {return employee;}
+    
+    @Override
+    public String toString() {
+        return date + "," + time + "," + customerName + "," +
+               modelName + "," + quantity + "," + total + "," +
+               method + "," + employee;
     }
 }
