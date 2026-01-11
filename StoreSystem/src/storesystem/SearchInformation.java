@@ -20,7 +20,7 @@ public class SearchInformation {
     public static void searchStock(String modelName, ArrayList<Stock> stocks) {
         boolean found = false;
         for(Stock s : stocks){
-            if(s.getModel().equalsIgnoreCase(modelName)){
+            if(s.getModel().trim().equalsIgnoreCase(modelName.trim())){
                 System.out.println("Model: " + s.getModel());
                 System.out.println("Unit Price: RM" + s.getPrice());
                 System.out.println("Stock by Outlet: ");
