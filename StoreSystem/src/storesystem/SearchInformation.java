@@ -21,53 +21,53 @@ public class SearchInformation {
     public static void searchStock(String modelName, ArrayList<Stock> stocks, Map<String, String> outletMap) {
         boolean found = false;
         double price = 0;
-
-    // Get price from loaded stock (current outlet)
-    for (Stock s : stocks) {
-        if (s.getModel().equalsIgnoreCase(modelName)) {
+        
+        // Get price from loaded stock (current outlet)
+        for (Stock s : stocks) {
+            if (s.getModel().equalsIgnoreCase(modelName)) {
             price = s.getPrice();
             found = true;
             break;
+            }
         }
-    }
-
-    if (!found) {
+        
+        if (!found) {
         System.out.println("No stock record found.");
         return;
-    }
-    
-    System.out.println("Model: " + modelName);
-    System.out.println("Unit Price: RM" + price);
-    System.out.println("Stock by Outlet: ");
-    
-    try(Scanner sc = new Scanner(new File("model.csv"))) {
-        String[]  header = sc.nextLine().split(",");
-        
-        while(sc.hasNextLine()) {
-            String[] data = sc.nextLine().split(",");
-            
-            if(!data[0].equalsIgnoreCase(modelName)) continue;
-            
-            List<String> nonZeroOutlets = new ArrayList<>();
-            for(int i = 2; i < data.length; i++) {
-                int qty = Integer.parseInt(data[i].trim());
-                if(qty > 0) {
-                    String outletName = outletMap.getOrDefault(header[i].trim(), header[i].trim());
-                    nonZeroOutlets.add(outletName + ": " + qty);
-                }
-            }
-            int half = (int) Math.ceil(nonZeroOutlets.size() / 2.0);
-            for(int i = 0; i < half; i++) System.out.print(nonZeroOutlets.get(i) + "   ");
-            System.out.println();
-            for(int i = half; i < nonZeroOutlets.size(); i++) System.out.print(nonZeroOutlets.get(i) + "   ");
-            System.out.println();
-            
-            return;
         }
-    } catch (Exception e) {
-        System.out.println("Error reading stock file");
-    }
- } 
+        
+        System.out.println("Model: " + modelName);
+        System.out.println("Unit Price: RM" + price);
+        System.out.println("Stock by Outlet: ");
+        
+        try(Scanner sc = new Scanner(new File("model.csv"))) {
+            String[]  header = sc.nextLine().split(",");
+            
+            while(sc.hasNextLine()) {
+                String[] data = sc.nextLine().split(",");
+                
+                if(!data[0].equalsIgnoreCase(modelName)) continue;
+                
+                List<String> nonZeroOutlets = new ArrayList<>();
+                for(int i = 2; i < data.length; i++) {
+                    int qty = Integer.parseInt(data[i].trim());
+                    if(qty > 0) {
+                        String outletName = outletMap.getOrDefault(header[i].trim(), header[i].trim());
+                        nonZeroOutlets.add(outletName + ": " + qty);
+                    }
+                }
+                int half = (int) Math.ceil(nonZeroOutlets.size() / 2.0);
+                for(int i = 0; i < half; i++) System.out.print(nonZeroOutlets.get(i) + "   ");
+                System.out.println();
+                for(int i = half; i < nonZeroOutlets.size(); i++) System.out.print(nonZeroOutlets.get(i) + "   ");
+                System.out.println();
+                
+                return;
+            }
+        } catch (Exception e) {
+            System.out.println("Error reading stock file");
+        }
+    } 
     
     public static void searchSales(String keyword, ArrayList<SaleRecord> sales) {
             boolean found = false;
