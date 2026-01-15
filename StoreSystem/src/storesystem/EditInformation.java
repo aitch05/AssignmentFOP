@@ -18,10 +18,13 @@ public class EditInformation {
         System.out.println("Enter Model Name: ");
         String modelName = sc.nextLine();
         
+        boolean found = false;
+        
         for(Stock s : stocks) {
             if(s.getModel().equalsIgnoreCase(modelName)) {
+                found = true;
                 System.out.println("Current Stock: " + s.getQuantity());
-                System.out.println("Enter New Stock Value: ");
+                System.out.print("Enter New Stock Value: ");
                 
                 try {
                     int newStock = Integer.parseInt(sc.nextLine());
@@ -37,16 +40,19 @@ public class EditInformation {
                     System.out.println("Invalid Input");
                     return;
                 }
+                break;
             }
         }
-        System.out.println("Model name not found");
+        if(!found) {
+            System.out.println("Model name not found");
+        }
     }
     
     public static void EditSales(List<SaleRecord> sales, Scanner sc) {
         System.out.println("=== Edit Sale Information ===");
-        System.out.println("Enter Transaction Date(YYYY-MM-DD): ");
+        System.out.print("Enter Transaction Date(YYYY-MM-DD): ");
         LocalDate date = LocalDate.parse(sc.nextLine());
-        System.out.println("Enter Customer Name: ");
+        System.out.print("Enter Customer Name: ");
         String custName = sc.nextLine();
         
         SaleRecord foundRecord = null;
@@ -74,7 +80,7 @@ public class EditInformation {
         
         switch(choice) {
             case 1 -> {
-                System.out.println("Enter New Name: ");
+                System.out.print("Enter New Name: ");
                 foundRecord.customerName = sc.nextLine();
             }
             case 2 -> {
@@ -82,16 +88,16 @@ public class EditInformation {
                 foundRecord.modelName = sc.nextLine();
             }
             case 3 -> {
-                System.out.println("Enter New Quantity: ");
+                System.out.print("Enter New Quantity: ");
                 foundRecord.quantity = sc.nextInt();
             }
             case 4 -> {
-                System.out.println("Enter New Total: ");
+                System.out.print("Enter New Total: ");
                 foundRecord.total = sc.nextInt();
                 sc.nextLine();
             }
             case 5 -> {
-                System.out.println("Enter New Transaction Method: ");
+                System.out.print("Enter New Transaction Method: ");
                 foundRecord.method = sc.nextLine();
             }
             default -> {
@@ -100,7 +106,7 @@ public class EditInformation {
             }
         }
         
-        System.out.println("Confirm Update? (Y/N): ");
+        System.out.print("Confirm Update? (Y/N): ");
         String ans = sc.nextLine();
         if(ans.equalsIgnoreCase("Y")) {
             System.out.println("Sales information updated successfully.");
