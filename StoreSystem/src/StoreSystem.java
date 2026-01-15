@@ -300,7 +300,8 @@ public class StoreSystem {
         String from = sc.nextLine();
         String currentOutlet = currentUser.getOutlet();
         int totalQty = 0;
-
+        
+        Map<String, Integer> receivedModels = new LinkedHashMap<>();
         while (true) {
             System.out.print("Enter Model Name: ");
             String model = sc.nextLine();
@@ -315,13 +316,8 @@ public class StoreSystem {
                     break;
                 }
             }
-            
-            // If model doesn't exist for this outlet yet, add it
-            if (!found) {
-                System.out.println("Enter price for new model: ");
-                double price = Double.parseDouble(sc.nextLine());
-                stocks.add(new Stock(model, qty, currentOutlet, price));
-            }
+           
+            receivedModels.put(model, receivedModels.getOrDefault(model, 0) + qty);
             
             totalQty += qty;
 
@@ -330,6 +326,17 @@ public class StoreSystem {
         }
 
         saveStock();
+        // Display output
+        System.out.println("\nFrom: " + from);
+        System.out.println("To: " + currentOutlet);
+        System.out.println("Models Received:");
+        
+        for (Map.Entry<String, Integer> entry : receivedModels.entrySet()) {
+            System.out.println("- " + entry.getKey() + " (Quantity: " + entry.getValue() + ")");
+        }
+        System.out.println("Total Quantity: " + totalQty);
+        System.out.println("Model quantities updated successfully.");
+        System.out.println("Stock In recorded.");
         
         generateReceipt("Stock In", from, currentOutlet, totalQty, currentUser.getName());
     }
@@ -342,7 +349,7 @@ public class StoreSystem {
         String to = sc.nextLine();
         String currentOutlet = currentUser.getOutlet();
         int totalQty = 0;
-
+        
         while (true) {
             System.out.print("Enter Model Name: ");
             String model = sc.nextLine();
@@ -516,6 +523,12 @@ private static void performNewSale() {
     String time = formatTime(LocalTime.now());
     System.out.print("Customer Name: ");
     String customer = sc.nextLine();
+    
+    double subtotal = 0;
+    String choice = null;
+    
+    System.out.println("Item(s) Purchased:");
+    do {
     System.out.print("Model Name: ");
     String model = sc.nextLine();
     
@@ -528,51 +541,73 @@ private static void performNewSale() {
         }
     }
 
-    if (target != null && target.getQuantity() > 0) {
-        System.out.print("Quantity: ");
-        int qty = Integer.parseInt(sc.nextLine());
-        
-        if (target.getQuantity() >= qty) {
-            target.setQuantity(target.getQuantity() - qty);
-            double total = target.getPrice() * qty;
-            
-            System.out.print("Payment Method: ");
-            String method = sc.nextLine();
-
-            // Auto-capture data from the logged-in session!
-            SaleRecord s = new SaleRecord(
-                LocalDate.now().toString(), 
-                formatTime(LocalTime.now()), 
-                customer, model, qty, total, method, 
-                currentUser.getName() // Captures current employee name
-            );
-            
-            salesHistory.add(s);
-            saveStock(); // Save update to model.csv
-            generateSalesReceipt(s);
-            System.out.println("Sale Recorded Successfully!");
-        } else {
-            System.out.println("Insufficient stock!");
-        }
-    } else {
+    if (target == null) {
         System.out.println("Product not found in this outlet.");
+        continue;
+    }
+    
+    System.out.print("Enter Quantity: ");
+    int qty = Integer.parseInt(sc.nextLine());
+    
+    if (qty <= 0 || qty > target.getQuantity()) {
+        System.out.println("Insufficient stock!");
+        continue;
+    }
+    target.setQuantity(target.getQuantity() - qty);
+    double itemTotal = target.getPrice() * qty;
+    subtotal += itemTotal;
+    
+    SaleRecord s = new SaleRecord(
+        LocalDate.now().toString(), 
+        formatTime(LocalTime.now()), 
+        customer, model, qty, itemTotal, "", 
+        currentUser.getName() // Captures current employee name
+    );
+    salesHistory.add(s);
+    
+    System.out.println("Unit Price: RM" + target.getPrice());
+    System.out.print("\nAre there more items purchased? (Y/N): ");
+    choice = sc.nextLine();
+    } while(choice.equalsIgnoreCase("Y"));
+    
+    System.out.print("Enter transaction method: ");
+    String method = sc.nextLine();
+    System.out.println("Subtotal: RM" + subtotal);
+    System.out.println();
+
+// Update all the items from this transaction with method
+    for (SaleRecord s : salesHistory) {
+    if (s.getCustomerName().equals(customer) &&
+        s.getDate().equals(date) &&
+        s.getTime().equals(time) &&
+        s.getMethod().isEmpty()) {
+        s.setMethod(method);
+        generateSalesReceipt(s);
     }
 }
+    
+    saveStock(); // Save update to model.csv
+    System.out.println("\nTransactio1"
+            + "n successful.");
+    System.out.println("Sale Recorded Successfully!");
+    System.out.println("Model quantities updated successfully.");
+    System.out.println("Receipt generated: sales_" + LocalDate.now() + ".txt");
+} 
 
 // --- FEATURE: SEARCH STOCK ---
 private static void performStockSearch() {
     System.out.println("\n=== Search Stock Information ===");
-    System.out.println("Search Model Name: ");
+    System.out.print("Search Model Name: ");
     String modelName = sc.nextLine();
     System.out.print("Searching...\n");
-    
-    SearchInformation.searchStock(modelName, (ArrayList<Stock>) stocks);
+    System.out.println();
+    SearchInformation.searchStock(modelName, (ArrayList<Stock>) stocks, outletMap);
 }
 
 // --- FEATURE: SEARCH SALES ---
 private static void performSalesSearch() {
     System.out.println("\n=== Search Sales Information ===");
-    System.out.println("Search keyword (date/ customer name/ model name): ");
+    System.out.print("Search keyword (date/ customer name/ model name): ");
     String keyword = sc.nextLine();
     System.out.print("Searching...\n");
 
