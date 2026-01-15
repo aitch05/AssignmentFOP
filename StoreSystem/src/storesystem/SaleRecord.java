@@ -34,6 +34,7 @@ public class SaleRecord {
     public int getQuantity() {return quantity;}
     public double getTotal() {return total;}
     public String getMethod() {return method;}
+    public void setMethod(String method) {this.method = method;}
     public String getEmployee() {return employee;}
     
     @Override
