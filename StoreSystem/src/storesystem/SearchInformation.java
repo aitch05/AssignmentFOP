@@ -8,7 +8,6 @@ package storesystem;
  *
  * @author Nur Hasna Nadirah
  */
-import java.io.File;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,58 +17,73 @@ import java.util.Map;
 import java.util.Scanner;
 
 public class SearchInformation {
-    public static void searchStock(String modelName, ArrayList<Stock> stocks, Map<String, String> outletMap) {
-        boolean found = false;
-        double price = 0;
-        
-        // Get price from loaded stock (current outlet)
-        for (Stock s : stocks) {
-            if (s.getModel().equalsIgnoreCase(modelName)) {
-            price = s.getPrice();
-            found = true;
-            break;
-            }
+    public static void searchStock(
+        String modelName,
+        ArrayList<Stock> stocks,   // kept to avoid breaking other code
+        Map<String, String> outletMap
+) {
+    System.out.println();
+    
+    boolean found = false;
+
+    try (Scanner sc = new Scanner(new java.io.File("model.csv"))) {
+
+        if (!sc.hasNextLine()) {
+            System.out.println("No stock data available.");
+            return;
         }
-        
-        if (!found) {
-        System.out.println("No stock record found.");
-        return;
-        }
-        
-        System.out.println("Model: " + modelName);
-        System.out.println("Unit Price: RM" + price);
-        System.out.println("Stock by Outlet: ");
-        
-        try(Scanner sc = new Scanner(new File("model.csv"))) {
-            String[]  header = sc.nextLine().split(",");
-            
-            while(sc.hasNextLine()) {
-                String[] data = sc.nextLine().split(",");
-                
-                if(!data[0].equalsIgnoreCase(modelName)) continue;
-                
-                List<String> nonZeroOutlets = new ArrayList<>();
-                for(int i = 2; i < data.length; i++) {
+
+        // ===== Read header (outlet codes) =====
+        String headerLine = sc.nextLine();
+        String[] headers = headerLine.split(",");
+
+        while (sc.hasNextLine()) {
+            String line = sc.nextLine();
+            if (line.trim().isEmpty()) continue;
+
+            String[] data = line.split(",");
+
+            String model = data[0].trim();
+            double price = Double.parseDouble(data[1].trim());
+
+            if (model.equalsIgnoreCase(modelName)) {
+
+                System.out.println("Model: " + model);
+                System.out.println("Unit Price: RM" + price);
+                System.out.println("Stock by Outlet:");
+
+                int count = 0;
+
+                // ===== Start from column 2 (outlets) =====
+                for (int i = 2; i < headers.length; i++) {
+                    String outletCode = headers[i].trim();
+                    String outletName = outletMap.getOrDefault(outletCode, outletCode);
                     int qty = Integer.parseInt(data[i].trim());
-                    if(qty > 0) {
-                        String outletName = outletMap.getOrDefault(header[i].trim(), header[i].trim());
-                        nonZeroOutlets.add(outletName + ": " + qty);
+
+                    System.out.print(outletName + ": " + qty + "   ");
+                    count++;
+
+                    // New line after every 4 outlets
+                    if (count % 4 == 0) {
+                        System.out.println();
                     }
                 }
-                int half = (int) Math.ceil(nonZeroOutlets.size() / 2.0);
-                for(int i = 0; i < half; i++) System.out.print(nonZeroOutlets.get(i) + "   ");
-                System.out.println();
-                for(int i = half; i < nonZeroOutlets.size(); i++) System.out.print(nonZeroOutlets.get(i) + "   ");
-                System.out.println();
-                
-                return;
+
+                System.out.println(); // final line break
+                found = true;
+                break;
             }
-        } catch (Exception e) {
-            System.out.println("Error reading stock file");
         }
-    } 
-    
-    public static void searchSales(String keyword, ArrayList<SaleRecord> sales) {
+
+    } catch (Exception e) {
+        System.out.println("Error reading stock data.");
+    }
+
+    if (!found) {
+        System.out.println("No stock record found.");
+    }
+}
+ public static void searchSales(String keyword, ArrayList<SaleRecord> sales) {
             boolean found = false;
             for(SaleRecord s : sales){
                 if(s.getCustomerName().toLowerCase().contains(keyword.toLowerCase()) || s.getModelName().equalsIgnoreCase(keyword) || s.getDate().equals(keyword)) {
@@ -78,7 +92,7 @@ public class SearchInformation {
                     System.out.println("Customer: " + s.getCustomerName());
                     System.out.println("Item(s): " + s.getModelName() + "\tQuantity: " + s.getQuantity());
                     System.out.println("Total: RM" + s.getTotal());
-                    System.out.println("Transaction Mathod: " + s.getMethod());
+                    System.out.println("Transaction Method: " + s.getMethod());
                     System.out.println("Employee: " + s.getEmployee());
                     System.out.println("Status: Transaction verified.");
                     
@@ -106,8 +120,8 @@ public class SearchInformation {
         System.out.println("\n=== Sales Analytics ===");
         System.out.println("Total Revenue recorded: RM" + totalRevenue);
         System.out.println("Total Transaction: " + sales.size());
-        System.out.println("Best Selling Model: " + bestModel + "( " + modelCount.get(bestModel) + "units)");
-        System.out.println("Average Sale Valur: RM" + (totalRevenue / sales.size()));
+        System.out.println("Best Selling Model: " + bestModel + "( " + modelCount.get(bestModel) + " units)");
+        System.out.println("Average Sale Value: RM" + (totalRevenue / sales.size()));
     }
     public static void filterAndSortSales(ArrayList<SaleRecord> sales, Scanner sc) {
         System.out.print("Enter Start Date (YYYY-MM-DD): ");
@@ -127,7 +141,7 @@ public class SearchInformation {
         if(filtered.isEmpty()){
             System.out.println("No records found for this period");
         }
-        System.out.println("Sort by (1/2/3): 1.Date 2. Ammount 3. Customer Name");
+        System.out.println("Sort by (1/2/3): 1. Date 2. Amount 3. Customer Name");
         int choice = sc.nextInt();
         
         for(int i = 0; i < filtered.size(); i++){
