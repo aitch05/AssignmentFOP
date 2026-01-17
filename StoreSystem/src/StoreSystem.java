@@ -1,3 +1,4 @@
+
 import java.io.*;
 import java.time.*;
 import static java.time.LocalDate.now;
@@ -293,12 +294,13 @@ public class StoreSystem {
     }
 
     private static void stockIn() {
+        loadStock();
         System.out.println("\n=== Stock In ===");
         System.out.println("Date: " + LocalDate.now());
         System.out.println("Time: " + formatTime(LocalTime.now()));
         System.out.print("From (HQ / Other Outlet): ");
         String from = sc.nextLine();
-        String currentOutlet = currentUser.getOutlet();
+        String currentOutlet = currentUser.getOutlet().split(" ")[0];
         int totalQty = 0;
         
         Map<String, Integer> receivedModels = new LinkedHashMap<>();
@@ -338,16 +340,18 @@ public class StoreSystem {
         System.out.println("Model quantities updated successfully.");
         System.out.println("Stock In recorded.");
         
+        saveStock();
         generateReceipt("Stock In", from, currentOutlet, totalQty, currentUser.getName());
     }
 
     private static void stockOut() {
+        loadStock();
         System.out.println("\n=== Stock Out ===");
         System.out.println("Date: " + LocalDate.now());
         System.out.println("Time: " + formatTime(LocalTime.now()));
         System.out.print("To (Outlet / Customer): ");
         String to = sc.nextLine();
-        String currentOutlet = currentUser.getOutlet();
+        String currentOutlet = currentUser.getOutlet().split(" ")[0];
         int totalQty = 0;
         
         while (true) {
@@ -359,6 +363,12 @@ public class StoreSystem {
             boolean modelFound = false;
             for (Stock s : stocks) {
                 if (s.getModel().equalsIgnoreCase(model) && s.getOutlet().equals(currentOutlet)) {
+                    if (s.getQuantity() < qty) {
+                        System.out.println("Error: Insufficient stock.");
+                        modelFound = true;
+                         break;
+                    }
+
                     s.setQuantity(s.getQuantity() - qty);
                     totalQty += qty;
                     modelFound = true;
@@ -474,8 +484,54 @@ public class StoreSystem {
     }
 
     private static void saveStock() {
-        // same logic you already implemented earlier (kept short here)
+
+    File file = new File("model.csv");
+    List<String[]> rows = new ArrayList<>();
+
+    try (Scanner sc = new Scanner(file)) {
+        while (sc.hasNextLine()) {
+            rows.add(sc.nextLine().split(","));
+        }
+    } catch (Exception e) {
+        System.out.println("Error reading model.csv");
+        return;
     }
+
+    String userOutletCode = currentUser.getOutlet().split(" ")[0];
+
+    // Find outlet column index
+    String[] header = rows.get(0);
+    int outletIndex = -1;
+
+    for (int i = 0; i < header.length; i++) {
+        if (header[i].equalsIgnoreCase(userOutletCode)) {
+            outletIndex = i;
+            break;
+        }
+    }
+
+    if (outletIndex == -1) return;
+
+    // Update quantities
+    for (int i = 1; i < rows.size(); i++) {
+        String modelName = rows.get(i)[0];
+
+        for (Stock s : stocks) {
+            if (s.getModel().equalsIgnoreCase(modelName)) {
+                rows.get(i)[outletIndex] = String.valueOf(s.getQuantity());
+            }
+        }
+    }
+
+    // Write back
+    try (PrintWriter pw = new PrintWriter(new FileWriter(file))) {
+        for (String[] row : rows) {
+            pw.println(String.join(",", row));
+        }
+    } catch (Exception e) {
+        System.out.println("Error saving stock");
+    }
+}
 
     private static void saveEmployees() {
         try (PrintWriter pw = new PrintWriter(new FileWriter(EMPLOYEE_FILE))) {
@@ -579,7 +635,6 @@ private static void performNewSale() {
     for (SaleRecord s : salesHistory) {
     if (s.getCustomerName().equals(customer) &&
         s.getDate().equals(date) &&
-        s.getTime().equals(time) &&
         s.getMethod().isEmpty()) {
         s.setMethod(method);
         generateSalesReceipt(s);
@@ -587,8 +642,7 @@ private static void performNewSale() {
 }
     
     saveStock(); // Save update to model.csv
-    System.out.println("\nTransactio1"
-            + "n successful.");
+    System.out.println("\nTransaction" + " successful.");
     System.out.println("Sale Recorded Successfully!");
     System.out.println("Model quantities updated successfully.");
     System.out.println("Receipt generated: sales_" + LocalDate.now() + ".txt");
@@ -657,7 +711,7 @@ private static void sendDailyReport() {
     System.out.println("\n=== Automated Email System ===");
     System.out.println("Recipient: 24001391@siswa.um.edu.my");
     System.out.println("Subject: Daily Sales Report - " + today);
-    System.out.println("Body: Hello HQ, the total sales for " + today + " is RM" + String.format("%2.f", dailyTotal));
+    System.out.println("Body: Hello HQ, the total sales for " + today + " is RM" + String.format("%.2f", dailyTotal));
     System.out.println("Attach: [" + fileName + "]");
     System.out.println("Status: Email sent successfully at" + now.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
     System.out.println("-------------------------------------\n");
