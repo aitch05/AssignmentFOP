@@ -29,17 +29,17 @@ public class StoreSystem {
     private static List<SaleRecord> salesHistory = new ArrayList<>();
 
     private static Scanner sc = new Scanner(System.in);
-    private static Employee currentUser = null;
+    private static Employee currentUser = null; //set as empty first
 
     // ================= MAIN =================
     public static void main(String[] args) {
-        loadData();
+        loadData(); // load csv data into memory
 
         while (true) {
             if (currentUser == null) {
-                loginMenu();
+                loginMenu(); //login method
             } else {
-                mainMenu();
+                mainMenu(); //go to main menu if already login
             }
         }
     }
@@ -60,7 +60,7 @@ public class StoreSystem {
 
     private static void login() {
         System.out.print("User ID: ");
-        String id = sc.nextLine().trim();
+        String id = sc.nextLine().trim(); //untuk remove space before and after sebab tu guna trim
         System.out.print("Password: ");
         String pass = sc.nextLine().trim();
 
@@ -87,7 +87,7 @@ public class StoreSystem {
         System.out.println("1. Clock In");
         System.out.println("2. Clock Out");
 
-        if (currentUser.getRole().equalsIgnoreCase("Manager")) {
+        if (currentUser.getRole().equalsIgnoreCase("Manager")) { //untuk ignore uppercase and lowercase diff
             System.out.println("3. Register Employee");
             System.out.println("4. View Employee Performance Metrics");
             System.out.println("5. Close Store(Send Daily Report)");
@@ -159,7 +159,7 @@ public class StoreSystem {
                 continue;
             }
 
-            String code = id.substring(0, 3);
+            String code = id.substring(0, 3); //to get outlet code 0 - 3
             if (outletMap.containsKey(code)) {
                 outlet = code + " (" + outletMap.get(code) + ")";
                 break;
@@ -182,7 +182,7 @@ public class StoreSystem {
 
     // ================= ATTENDANCE =================
     private static void clockIn() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(); //to get current date
 
         for (Attendance a : attendanceLogs) {
             if (a.getEmployeeId().equals(currentUser.getId())
@@ -193,7 +193,7 @@ public class StoreSystem {
             }
         }
 
-        LocalTime now = LocalTime.now();
+        LocalTime now = LocalTime.now(); //to get local time
         Attendance log = new Attendance(currentUser.getId(), today, LocalTime.now(), null, currentUser.getOutlet());
         attendanceLogs.add(log);
         saveAttendance();
@@ -234,7 +234,7 @@ public class StoreSystem {
     
     // ================= STOCK =================
     private static void stockMenu() {
-        loadStock();
+        loadStock(); //to load stock into memory
 
         System.out.println("\n=== STOCK MANAGEMENT ===");
         System.out.println("1. Morning Count");
@@ -258,27 +258,27 @@ public class StoreSystem {
         System.out.println("Date: " + LocalDate.now());
         System.out.println("Time: " + formatTime(LocalTime.now()));
         
-        int correct = 0;
+        int correct = 0; //initialize variable
         int mismatch = 0;
         int totalModels = 0;
         
-        if (stocks.isEmpty()) {
+        if (stocks.isEmpty()) { //nothing in stock
         System.out.println("Error: No models found for outlet " + currentUser.getOutlet());
         return;
     }
-        for (Stock s : stocks) {
-            totalModels++;
+        for (Stock s : stocks) { //count for every stock 
+           totalModels++;
             System.out.print("Model: " + s.getModel() + " – Counted: ");
-            int counted = Integer.parseInt(sc.nextLine());
+            int counted = Integer.parseInt(sc.nextLine()); //to convert string into number
             System.out.println("Store Record: " + s.getQuantity());
 
             if (counted == s.getQuantity()) {
             System.out.println("Stock tally correct.\n");
             correct++;
             } else {
-            int diff = Math.abs(counted - s.getQuantity());
+            int diff = Math.abs(counted - s.getQuantity()); // to get diff if mismatch
             System.out.println("! Mismatch detected (" + diff + " unit difference)\n");
-            mismatch++;
+            mismatch++; // to put in summary total mismatch
             } 
         }
         // ===== SUMMARY =====
@@ -299,26 +299,80 @@ public class StoreSystem {
         System.out.println("Date: " + LocalDate.now());
         System.out.println("Time: " + formatTime(LocalTime.now()));
         System.out.print("From (HQ / Other Outlet): ");
-        String from = sc.nextLine();
-        String currentOutlet = currentUser.getOutlet().split(" ")[0];
+        String fromOutlet = sc.nextLine().trim();
+        String currentOutlet = currentUser.getOutlet().split(" ")[0]; // to separate use split and [0] to get first index in array
         int totalQty = 0;
         
-        Map<String, Integer> receivedModels = new LinkedHashMap<>();
+        Map<String, Integer> receivedModels = new LinkedHashMap<>(); //linkedhashmap selalu digunakan in receipt to get correct order same as user entered
         while (true) {
-            System.out.print("Enter Model Name: ");
-            String model = sc.nextLine();
-            System.out.print("Quantity: ");
-            int qty = Integer.parseInt(sc.nextLine());
+        System.out.print("Enter Model Name: ");
+        String model = sc.nextLine();
 
-            boolean found = false;
-            for (Stock s : stocks) {
-                if (s.getModel().equalsIgnoreCase(model) && s.getOutlet().equals(currentOutlet)) {
-                    s.setQuantity(s.getQuantity() + qty);
-                    found = true;
-                    break;
-                }
+        System.out.print("Quantity: ");
+        int qty = Integer.parseInt(sc.nextLine());
+
+        boolean updated = false;
+
+        File file = new File("model.csv");
+        List<String[]> rows = new ArrayList<>();
+
+        try (Scanner fs = new Scanner(file)) {
+            while (fs.hasNextLine()) {
+                rows.add(fs.nextLine().split(","));
             }
-           
+        } catch (Exception e) {
+            System.out.println("Error reading model.csv");
+            return;
+        }
+
+        // find column index
+        String[] header = rows.get(0);
+        int fromIndex = -1, toIndex = -1;
+
+        for (int i = 0; i < header.length; i++) {
+            if (header[i].equalsIgnoreCase(fromOutlet)) fromIndex = i;
+            if (header[i].equalsIgnoreCase(currentOutlet)) toIndex = i;
+        }
+
+        if (fromIndex == -1 || toIndex == -1) {
+            System.out.println("Invalid outlet code.");
+            return;
+        }
+
+        // update stock
+        for (int i = 1; i < rows.size(); i++) {
+            if (rows.get(i)[0].equalsIgnoreCase(model)) {
+
+                int fromQty = Integer.parseInt(rows.get(i)[fromIndex]);
+                int toQty = Integer.parseInt(rows.get(i)[toIndex]);
+
+                if (fromQty < qty) {
+                    System.out.println("Insufficient stock in " + fromOutlet);
+                    return;
+                }
+
+                rows.get(i)[fromIndex] = String.valueOf(fromQty - qty);
+                rows.get(i)[toIndex] = String.valueOf(toQty + qty);
+                updated = true;
+                break;
+            }
+        }
+
+        if (!updated) {
+            System.out.println("Model not found.");
+            return;
+        }
+
+        // write back to CSV
+        try (PrintWriter pw = new PrintWriter(new FileWriter(file))) {
+            for (String[] row : rows) {
+                pw.println(String.join(",", row));
+            }
+        } catch (Exception e) {
+            System.out.println("Error saving stock.");
+            return;
+        }
+           loadStock();
             receivedModels.put(model, receivedModels.getOrDefault(model, 0) + qty);
             
             totalQty += qty;
@@ -327,9 +381,9 @@ public class StoreSystem {
             if (!sc.nextLine().equalsIgnoreCase("Y")) break;
         }
 
-        saveStock();
+        saveStock(); //untuk update stock after stock in dalam csv
         // Display output
-        System.out.println("\nFrom: " + from);
+        System.out.println("\nFrom: " + fromOutlet);
         System.out.println("To: " + currentOutlet);
         System.out.println("Models Received:");
         
@@ -341,7 +395,7 @@ public class StoreSystem {
         System.out.println("Stock In recorded.");
         
         saveStock();
-        generateReceipt("Stock In", from, currentOutlet, totalQty, currentUser.getName());
+        generateReceipt("Stock In", fromOutlet, currentOutlet, totalQty, currentUser.getName());
     }
 
     private static void stockOut() {
@@ -350,40 +404,83 @@ public class StoreSystem {
         System.out.println("Date: " + LocalDate.now());
         System.out.println("Time: " + formatTime(LocalTime.now()));
         System.out.print("To (Outlet / Customer): ");
-        String to = sc.nextLine();
+        String to = sc.nextLine().trim();
         String currentOutlet = currentUser.getOutlet().split(" ")[0];
         int totalQty = 0;
-        
-        while (true) {
-            System.out.print("Enter Model Name: ");
-            String model = sc.nextLine();
-            System.out.print("Quantity: ");
-            int qty = Integer.parseInt(sc.nextLine());
 
-            boolean modelFound = false;
-            for (Stock s : stocks) {
-                if (s.getModel().equalsIgnoreCase(model) && s.getOutlet().equals(currentOutlet)) {
-                    if (s.getQuantity() < qty) {
-                        System.out.println("Error: Insufficient stock.");
-                        modelFound = true;
-                         break;
-                    }
+            while (true) {
+        System.out.print("Enter Model Name: ");
+        String model = sc.nextLine();
 
-                    s.setQuantity(s.getQuantity() - qty);
-                    totalQty += qty;
-                    modelFound = true;
-                    break;
+        System.out.print("Quantity: ");
+        int qty = Integer.parseInt(sc.nextLine());
+
+        boolean updated = false;
+
+        File file = new File("model.csv");
+        List<String[]> rows = new ArrayList<>();
+
+        try (Scanner fs = new Scanner(file)) {
+            while (fs.hasNextLine()) {
+                rows.add(fs.nextLine().split(","));
+            }
+        } catch (Exception e) {
+            System.out.println("Error reading model.csv");
+            return;
+        }
+
+        String[] header = rows.get(0);
+        int fromIndex = -1, toIndex = -1;
+
+        for (int i = 0; i < header.length; i++) {
+            if (header[i].equalsIgnoreCase(currentOutlet)) fromIndex = i;
+            if (!to.equalsIgnoreCase("CUSTOMER") && header[i].equalsIgnoreCase(to)) {
+                toIndex = i;
+            }
+        }
+
+        // update stock
+        for (int i = 1; i < rows.size(); i++) {
+            if (rows.get(i)[0].equalsIgnoreCase(model)) {
+                int fromQty = Integer.parseInt(rows.get(i)[fromIndex]);
+
+                if (fromQty < qty) {
+                    System.out.println("Error: Insufficient stock in " + currentOutlet);
+                    return;
                 }
-            }
 
-            if (!modelFound) {
-                System.out.println("Error: Model not found in this outlet.");
+                rows.get(i)[fromIndex] = String.valueOf(fromQty - qty);
+
+                // only increase if TO is an outlet
+                if (toIndex != -1) {
+                    int toQty = Integer.parseInt(rows.get(i)[toIndex]);
+                    rows.get(i)[toIndex] = String.valueOf(toQty + qty);
+                }
+
+                updated = true;
+                break;
             }
+        }
+
+        if (!updated) {
+            System.out.println("Model not found.");
+            return;
+        }
+
+        // write back CSV
+        try (PrintWriter pw = new PrintWriter(new FileWriter(file))) {
+            for (String[] row : rows) {
+                pw.println(String.join(",", row));
+            }
+        } catch (Exception e) {
+            System.out.println("Error saving stock.");
+            return;
+        }
 
             System.out.print("Add more models? (Y/N): ");
             if (!sc.nextLine().equalsIgnoreCase("Y")) break;
         }
-
+        loadStock();
         saveStock();
         
         generateReceipt("Stock Out", currentOutlet, to, totalQty, currentUser.getName());
@@ -533,6 +630,7 @@ public class StoreSystem {
     }
 }
 
+
     private static void saveEmployees() {
         try (PrintWriter pw = new PrintWriter(new FileWriter(EMPLOYEE_FILE))) {
             for (Employee e : employees) {
@@ -621,14 +719,14 @@ private static void performNewSale() {
     );
     salesHistory.add(s);
     
-    System.out.println("Unit Price: RM" + target.getPrice());
+    System.out.printf("Unit Price: RM%.2f%n" , target.getPrice());
     System.out.print("\nAre there more items purchased? (Y/N): ");
     choice = sc.nextLine();
     } while(choice.equalsIgnoreCase("Y"));
     
     System.out.print("Enter transaction method: ");
     String method = sc.nextLine();
-    System.out.println("Subtotal: RM" + subtotal);
+    System.out.printf("Subtotal: RM%.2f%n" , subtotal);
     System.out.println();
 
 // Update all the items from this transaction with method
@@ -642,7 +740,8 @@ private static void performNewSale() {
 }
     
     saveStock(); // Save update to model.csv
-    System.out.println("\nTransaction" + " successful.");
+    System.out.println("\nTransaction"
+            + " successful.");
     System.out.println("Sale Recorded Successfully!");
     System.out.println("Model quantities updated successfully.");
     System.out.println("Receipt generated: sales_" + LocalDate.now() + ".txt");
@@ -676,7 +775,7 @@ private static void performSalesSearch() {
         out.println("Date: " + s.getDate() + "\tTime: " + s.getTime());
         out.println("Customer: " + s.getCustomerName());
         out.println("Item: " + s.getModelName() + "\tQuantity: " + s.getQuantity());
-        out.println("Total: RM" + s.getTotal());
+        out.printf("Total: RM %.2f%n" , s.getTotal());
         out.println("Payment Method: " + s.getMethod());
         out.println("Employee: " + s.getEmployee());
         out.println("---------------------------");
