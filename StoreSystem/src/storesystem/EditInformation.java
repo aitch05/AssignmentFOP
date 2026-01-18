@@ -14,8 +14,8 @@ import java.util.Scanner;
 
 public class EditInformation {
     public static void editStock(List<Stock> stocks, Scanner sc) {
-        System.out.println("=== Edit Stock Information ===");
-        System.out.println("Enter Model Name: ");
+        System.out.println("\n=== Edit Stock Information ===");
+        System.out.print("Enter Model Name: ");
         String modelName = sc.nextLine();
         
         boolean found = false;
@@ -49,7 +49,7 @@ public class EditInformation {
     }
     
     public static void EditSales(List<SaleRecord> sales, Scanner sc) {
-        System.out.println("=== Edit Sale Information ===");
+        System.out.println("\n=== Edit Sale Information ===");
         System.out.print("Enter Transaction Date(YYYY-MM-DD): ");
         LocalDate date = LocalDate.parse(sc.nextLine());
         System.out.print("Enter Customer Name: ");
@@ -68,6 +68,7 @@ public class EditInformation {
         }
         
         System.out.println("\nSales Record Found: ");
+        System.out.println();
         System.out.println("Model: " + foundRecord.modelName + "Quantity: " + foundRecord.quantity);
         System.out.println("Total: RM" + foundRecord.total);
         System.out.println("Transaction Method: " + foundRecord.method);
