@@ -13,7 +13,6 @@ public class Stock {
     private String model;
     private int quantity;
     private String outlet;
-    private ArrayList<OutletStock> outletStocks;
     private double price; // Added for sales calculation
 
     public Stock(String model, int quantity, String outlet, double price) {
@@ -21,12 +20,8 @@ public class Stock {
         this.quantity = quantity;
         this.outlet = outlet;
         this.price = price;
-        this.outletStocks = new ArrayList();
     }
-    public void addOutletStock(String outlet, int qty) {
-        outletStocks.add(new OutletStock(outlet,qty));
-    }
-    public ArrayList<OutletStock> getOutletStock() {return outletStocks;}
+
     public String getModel() { return model; }
     public int getQuantity() { return quantity; }
     public String getOutlet() { return outlet; }
