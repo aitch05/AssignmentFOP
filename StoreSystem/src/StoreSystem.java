@@ -1,5 +1,10 @@
-
+import jakarta.mail.*;
+import jakarta.mail.internet.*;
+import java.util.Properties;
+import java.io.File;
 import java.io.*;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
 import java.time.*;
 import static java.time.LocalDate.now;
 import java.time.format.DateTimeFormatter;
@@ -304,16 +309,6 @@ public class StoreSystem {
         String currentOutlet = currentUser.getOutlet().split(" ")[0]; // to separate use split and [0] to get first index in array
         int totalQty = 0;
         
-        Map<String, Integer> receivedModels = new LinkedHashMap<>(); //linkedhashmap selalu digunakan in receipt to get correct order same as user entered
-        while (true) {
-        System.out.print("Enter Model Name: ");
-        String model = sc.nextLine();
-
-        System.out.print("Quantity: ");
-        int qty = Integer.parseInt(sc.nextLine());
-
-        boolean updated = false;
-
         File file = new File("model.csv");
         List<String[]> rows = new ArrayList<>();
 
@@ -339,6 +334,16 @@ public class StoreSystem {
             System.out.println("Invalid outlet code.");
             return;
         }
+        
+        Map<String, Integer> receivedModels = new LinkedHashMap<>(); //linkedhashmap selalu digunakan in receipt to get correct order same as user entered
+        while (true) {
+        System.out.print("Enter Model Name: ");
+        String model = sc.nextLine();
+
+        System.out.print("Quantity: ");
+        int qty = Integer.parseInt(sc.nextLine());
+
+        boolean updated = false;
 
         // update stock
         for (int i = 1; i < rows.size(); i++) {
@@ -793,27 +798,72 @@ private static String formatTime(LocalTime t) {
 
 private static void sendDailyReport() {
     LocalDate today = LocalDate.now();
-    LocalTime now = LocalTime.now();
-    LocalTime end = LocalTime.of(22, 0);
-    
-    if(now.isAfter(end)) {
-        System.out.println("Warning: It is past 10.00 pm. Report should have been sent");
-    }
-    
-    double dailyTotal = 0;
-    for(SaleRecord s : salesHistory) {
-        if(s.getDate().equals(today.toString())){
-            dailyTotal += s.getTotal();
+        LocalTime now = LocalTime.now();
+        LocalTime deadline = LocalTime.of(22, 0); // 10:00 PM requirement
+        double dailyTotal = 0;
+
+        for (SaleRecord s : salesHistory) {
+            if (s.getDate().equals(today.toString())) {
+                dailyTotal += s.getTotal();
+            }
         }
+
+        // --- 2. GMAIL SMTP CONFIGURATION ---
+    final String senderEmail = "nurhasnadirah@gmail.com"; 
+    final String appPassword = "buig mivw gsni ktnr"; // <--- Put your 16-character App Password here
+
+    Properties props = new Properties();
+    props.put("mail.smtp.auth", "true");
+    props.put("mail.smtp.starttls.enable", "true");
+    props.put("mail.smtp.host", "smtp.gmail.com");
+    props.put("mail.smtp.port", "587");
+
+    // --- 3. CREATE SESSION ---
+    Session session;
+        session = Session.getInstance(props, new jakarta.mail.Authenticator() {
+            @Override
+            protected jakarta.mail.PasswordAuthentication getPasswordAuthentication() {
+                return new jakarta.mail.PasswordAuthentication(senderEmail, appPassword);
+            }
+        });
+
+    try {
+        // --- 4. CONSTRUCT THE EMAIL (MimeMessage) ---
+        Message message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(senderEmail));
+        
+        // Recipient is your student email as per assignment requirement
+        message.setRecipients(Message.RecipientType.TO, InternetAddress.parse("nurhasnadirah@gmail.com"));
+        message.setSubject("Daily Sales Report - " + today);
+
+        // CREATE MULTIPART (Summary + Attachment)
+        Multipart multipart = new MimeMultipart();
+
+      
+        MimeBodyPart textPart = new MimeBodyPart();
+        String summary = "Hello HQ,\n\n" + "Summary for " + today + ":\n" + "Total Sales: RM " + String.format("%.2f", dailyTotal) + "\n\n" + "The receipt file is attached below.";
+        textPart.setText(summary);
+        multipart.addBodyPart(textPart);
+
+        // Part 2: Attachment
+        String fileName = "sales_receipt_" + today + ".txt";
+        File receiptFile = new File(fileName);
+        if (receiptFile.exists()) {
+            MimeBodyPart attachmentPart = new MimeBodyPart();
+            attachmentPart.attachFile(receiptFile);
+            multipart.addBodyPart(attachmentPart);
+        }
+
+        message.setContent(multipart);
+
+        // --- 5. SEND ---
+        Transport.send(message);
+        System.out.println("Success: Report sent from nurhasnadirah@gmail.com to HQ.");
+
+    } catch (Exception e) {
+        System.err.println("Failed to send email. Check your App Password or Internet.");
+        e.printStackTrace();
     }
-    String fileName = "sales_receipt_" + today + ".txt";
-    System.out.println("\n=== Automated Email System ===");
-    System.out.println("Recipient: 24001391@siswa.um.edu.my");
-    System.out.println("Subject: Daily Sales Report - " + today);
-    System.out.println("Body: Hello HQ, the total sales for " + today + " is RM" + String.format("%.2f", dailyTotal));
-    System.out.println("Attach: [" + fileName + "]");
-    System.out.println("Status: Email sent successfully at" + now.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
-    System.out.println("-------------------------------------\n");
+}
 }
 
-}
