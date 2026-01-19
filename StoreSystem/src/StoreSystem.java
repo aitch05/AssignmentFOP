@@ -137,6 +137,7 @@ public class StoreSystem {
 
     // ================= EMPLOYEE =================
     private static void registerEmployee() {
+        System.out.println("\n=== Register Employee ===");
         System.out.print("Name: ");
         String name = sc.nextLine();
 
@@ -408,7 +409,7 @@ public class StoreSystem {
         String currentOutlet = currentUser.getOutlet().split(" ")[0];
         int totalQty = 0;
 
-            while (true) {
+        while (true) {
         System.out.print("Enter Model Name: ");
         String model = sc.nextLine();
 
@@ -528,7 +529,7 @@ public class StoreSystem {
                 String code = id.substring(0, 3);
                 String outlet = code + " (" + outletMap.get(code) + ")";
                employees.add(new Employee(id, name, role, pass, outlet));
-            }            eSc.close();
+            }  eSc.close();
         } catch (Exception e) {
             System.out.println("Error loading data.");
             }
@@ -740,8 +741,7 @@ private static void performNewSale() {
 }
     
     saveStock(); // Save update to model.csv
-    System.out.println("\nTransaction"
-            + " successful.");
+    System.out.println("\nTransaction" + " successful.");
     System.out.println("Sale Recorded Successfully!");
     System.out.println("Model quantities updated successfully.");
     System.out.println("Receipt generated: sales_" + LocalDate.now() + ".txt");
